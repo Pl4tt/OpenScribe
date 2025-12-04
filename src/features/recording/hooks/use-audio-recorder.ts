@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { requestSystemAudioStream } from "../lib/system-audio"
 
 const TARGET_SAMPLE_RATE = 16000
 const DEFAULT_SEGMENT_MS = 10000
@@ -195,7 +196,8 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
   const [error, setError] = useState<string | null>(null)
   const [errorCode, setErrorCode] = useState<"capture_error" | "processing_error" | null>(null)
 
-  const streamRef = useRef<MediaStream | null>(null)
+  const micStreamRef = useRef<MediaStream | null>(null)
+  const systemStreamRef = useRef<MediaStream | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
   const processorRef = useRef<AudioWorkletNode | ScriptProcessorNode | null>(null)
   const resamplerRef = useRef<StreamingResampler | null>(null)
@@ -236,8 +238,10 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
     }
     audioContextRef.current = null
 
-    streamRef.current?.getTracks().forEach((track) => track.stop())
-    streamRef.current = null
+    micStreamRef.current?.getTracks().forEach((track) => track.stop())
+    micStreamRef.current = null
+    systemStreamRef.current?.getTracks().forEach((track) => track.stop())
+    systemStreamRef.current = null
     resamplerRef.current = null
   }, [])
 
@@ -290,14 +294,14 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
     [processSegments],
   )
 
-  const setupProcessor = useCallback(async (audioContext: AudioContext, source: MediaStreamAudioSourceNode) => {
+  const setupProcessor = useCallback(async (audioContext: AudioContext, sourceNode: AudioNode) => {
     try {
       await audioContext.audioWorklet.addModule("/worklets/pcm-processor.js")
       const node = new AudioWorkletNode(audioContext, "pcm-processor")
       node.port.onmessage = (event: MessageEvent<Float32Array>) => handleSamples(event.data)
       const gain = audioContext.createGain()
       gain.gain.value = 0
-      source.connect(node)
+      sourceNode.connect(node)
       node.connect(gain)
       gain.connect(audioContext.destination)
       processorRef.current = node
@@ -310,7 +314,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
         copy.set(input)
         handleSamples(copy)
       }
-      source.connect(scriptNode)
+      sourceNode.connect(scriptNode)
       scriptNode.connect(audioContext.destination)
       processorRef.current = scriptNode
     }
@@ -325,7 +329,7 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
       allSamplesRef.current = []
       seqRef.current = 0
 
-      const stream = await navigator.mediaDevices.getUserMedia({
+      const microphoneStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
@@ -333,13 +337,36 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}): UseAudi
         },
       })
 
-      streamRef.current = stream
+      micStreamRef.current = microphoneStream
+
+      const systemCapture = await requestSystemAudioStream()
+      const systemStream =
+        systemCapture && systemCapture.stream.getAudioTracks().length > 0 ? systemCapture.stream : null
+      systemStreamRef.current = systemStream
+
       const audioContext = new AudioContext()
       audioContextRef.current = audioContext
       resamplerRef.current = new StreamingResampler(audioContext.sampleRate, TARGET_SAMPLE_RATE)
 
-      const source = audioContext.createMediaStreamSource(stream)
-      await setupProcessor(audioContext, source)
+      const mixNode = audioContext.createGain()
+      mixNode.gain.value = 1
+
+      const micSource = audioContext.createMediaStreamSource(microphoneStream)
+      micSource.connect(mixNode)
+
+      if (systemStream) {
+        try {
+          const systemSource = audioContext.createMediaStreamSource(systemStream)
+          systemSource.connect(mixNode)
+          systemStream.getVideoTracks().forEach((track) => track.stop())
+        } catch (error) {
+          console.warn("Failed to add system audio source", error)
+        }
+      } else if (typeof window !== "undefined" && window.desktop) {
+        console.warn("System audio capture unavailable; falling back to microphone only")
+      }
+
+      await setupProcessor(audioContext, mixNode)
 
       setIsRecording(true)
       isRecordingRef.current = true

@@ -1,9 +1,17 @@
 const path = require('path');
-const { app, BrowserWindow, shell, dialog } = require('electron');
+const {
+  app,
+  BrowserWindow,
+  shell,
+  dialog,
+  ipcMain,
+  systemPreferences,
+} = require('electron');
 const { ensureNextServer, stopNextServer } = require('./next-server');
 
 const isDev = !app.isPackaged;
 const DEV_SERVER_URL = process.env.ELECTRON_START_URL || 'http://localhost:3000';
+const isMac = process.platform === 'darwin';
 
 let mainWindow;
 
@@ -54,6 +62,7 @@ const createMainWindow = async () => {
 
 const boot = async () => {
   await app.whenReady();
+  registerPermissionHandlers();
   mainWindow = await createMainWindow();
 
   app.on('activate', async () => {
@@ -74,3 +83,38 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
+
+function registerPermissionHandlers() {
+  ipcMain.handle('media-permissions:request', async () => {
+    if (!isMac) {
+      return { microphoneGranted: true, screenStatus: 'granted' };
+    }
+    let microphoneGranted = false;
+    try {
+      microphoneGranted = await systemPreferences.askForMediaAccess('microphone');
+    } catch (error) {
+      console.error('Microphone permission request failed', error);
+    }
+    const screenStatus = systemPreferences.getMediaAccessStatus('screen');
+    return { microphoneGranted, screenStatus };
+  });
+
+  ipcMain.handle('media-permissions:status', (_event, mediaType) => {
+    if (!isMac) return 'granted';
+    try {
+      return systemPreferences.getMediaAccessStatus(mediaType);
+    } catch (error) {
+      console.error('Failed to read media access status', error);
+      return 'unknown';
+    }
+  });
+
+  ipcMain.handle('media-permissions:open-screen-settings', () => {
+    if (!isMac) return false;
+    const settingsUrl = 'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture';
+    shell.openExternal(settingsUrl).catch((error) => {
+      console.error('Failed to open screen permissions panel', error);
+    });
+    return true;
+  });
+}

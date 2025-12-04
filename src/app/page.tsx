@@ -12,6 +12,7 @@ import {
 import { useAudioRecorder, type RecordedSegment, RecordingView } from "@/features/recording"
 import { useSegmentUpload, ProcessingView } from "@/features/transcription"
 import { generateClinicalNote } from "@/app/actions"
+import { warmupMicrophonePermission, warmupSystemAudioPermission } from "@/features/recording/lib/system-audio"
 
 type ViewState =
   | { type: "idle" }
@@ -38,6 +39,65 @@ export default function HomePage() {
   const eventSourceRef = useRef<EventSource | null>(null)
   const finalTranscriptRef = useRef<string>("")
   const finalRecordingRef = useRef<Blob | null>(null)
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    if (window.__openscribePermissionsPrimed) return
+    window.__openscribePermissionsPrimed = true
+
+    const ensurePermissions = async () => {
+      const desktop = window.desktop
+      const readStatus = async (mediaType: "microphone" | "screen") => {
+        try {
+          const status = await desktop?.getMediaAccessStatus?.(mediaType)
+          return status ?? "unknown"
+        } catch (error) {
+          console.error(`Failed to read ${mediaType} access status`, error)
+          return "unknown"
+        }
+      }
+
+      let microphoneStatus = await readStatus("microphone")
+      let screenStatus = await readStatus("screen")
+
+      if (microphoneStatus !== "granted" || screenStatus !== "granted") {
+        try {
+          const result = await desktop?.requestMediaPermissions?.()
+          if (result) {
+            microphoneStatus = result.microphoneGranted ? "granted" : microphoneStatus
+            screenStatus = result.screenStatus ?? screenStatus
+          }
+        } catch (error) {
+          console.error("Desktop permission prompt failed", error)
+        }
+      }
+
+      if (microphoneStatus !== "granted") {
+        const micGranted = await warmupMicrophonePermission()
+        if (!micGranted) {
+          console.warn("Microphone permission still not granted")
+        } else {
+          microphoneStatus = "granted"
+        }
+      } else {
+        void warmupMicrophonePermission()
+      }
+
+      if (screenStatus !== "granted") {
+        const screenGranted = await warmupSystemAudioPermission()
+        if (!screenGranted) {
+          console.warn("Screen recording permission still not granted")
+          await desktop?.openScreenPermissionSettings?.()
+        } else {
+          screenStatus = "granted"
+        }
+      } else {
+        void warmupSystemAudioPermission()
+      }
+    }
+
+    void ensurePermissions()
+  }, [])
 
   const { enqueueSegment, resetQueue } = useSegmentUpload(sessionId, {
     onError: (error) => {
