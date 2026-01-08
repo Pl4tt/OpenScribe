@@ -5,8 +5,6 @@ import path from "path"
 // Get the app data directory for storing config
 function getConfigPath(): string {
   try {
-    // Try to load Electron dynamically (only available at runtime in packaged app)
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { app } = require("electron")
     if (app && app.getPath) {
       // Electron environment
