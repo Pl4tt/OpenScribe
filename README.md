@@ -87,35 +87,6 @@ OpenScribe exists to provide a simple, open-source alternative to cloud dependen
 - **Architecture**: [architecture.md](./architecture.md)
 - **Tests**: [packages/llm](./packages/llm/src/__tests__/), [packages/pipeline](./packages/pipeline/)
 
-## Quick Start
-
-### Prerequisites
-- Node.js 18+
-- pnpm (`npm install -g pnpm`)
-
-### Installation
-
-```bash
-git clone https://github.com/sammargolis/OpenScribe.git
-cd OpenScribe
-pnpm install
-pnpm dev
-```
-
-Open `http://localhost:3001`
-
-### Environment Variables
-
-Create `apps/web/.env.local`:
-
-```
-OPENAI_API_KEY=your-key-here
-ANTHROPIC_API_KEY=your-key-here
-NEXT_PUBLIC_SECURE_STORAGE_KEY=<base64-encoded-32-bytes>
-```
-
-Generate the storage key: `openssl rand -base64 32`
-
 ## Roadmap
 
 ### Current Status (v0)
