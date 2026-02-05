@@ -37,20 +37,24 @@ global.localStorage = {
 
 // Mock crypto
 let uuidCounter = 0
-global.crypto = {
-  randomUUID: () => `test-uuid-${++uuidCounter}`,
-  subtle: {
-    encrypt: async (algorithm: any, key: any, data: any) => {
-      const dataStr = typeof data === "string" ? data : new TextDecoder().decode(data)
-      return new TextEncoder().encode(`encrypted:${dataStr}`)
+Object.defineProperty(global, 'crypto', {
+  value: {
+    randomUUID: () => `test-uuid-${++uuidCounter}`,
+    subtle: {
+      encrypt: async (algorithm: any, key: any, data: any) => {
+        const dataStr = typeof data === "string" ? data : new TextDecoder().decode(data)
+        return new TextEncoder().encode(`encrypted:${dataStr}`)
+      },
+      decrypt: async (algorithm: any, key: any, data: any) => {
+        const dataStr = new TextDecoder().decode(data)
+        return new TextEncoder().encode(dataStr.replace("encrypted:", ""))
+      },
+      importKey: async () => ({} as CryptoKey),
     },
-    decrypt: async (algorithm: any, key: any, data: any) => {
-      const dataStr = new TextDecoder().decode(data)
-      return new TextEncoder().encode(dataStr.replace("encrypted:", ""))
-    },
-    importKey: async () => ({} as CryptoKey),
   } as any,
-} as Crypto
+  writable: true,
+  configurable: true,
+})
 
 test("Audit Log Tests", async (t) => {
   t.beforeEach(() => {
@@ -273,7 +277,7 @@ test("Audit Log Tests", async (t) => {
     // Manually inject old entry
     const currentLogs = await getAuditEntries()
     const allLogs = [...currentLogs, oldEntry]
-    await import("../secure-storage").then((m) =>
+    await import("../secure-storage.js").then((m) =>
       m.saveSecureItem("openscribe_audit_logs", allLogs)
     )
 

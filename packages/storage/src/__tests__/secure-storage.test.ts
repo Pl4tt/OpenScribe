@@ -30,7 +30,7 @@ beforeEach(() => {
       encrypt: vi.fn().mockImplementation(async () => {
         return new Uint8Array([1, 2, 3, 4, 5]).buffer
       }),
-      decrypt: vi.fn().mockImplementation(async (_, __, data) => {
+      decrypt: vi.fn().mockImplementation(async (_: unknown, __: unknown, data: ArrayBuffer) => {
         // Return mock decrypted data
         return new TextEncoder().encode(JSON.stringify({ test: "data" })).buffer
       }),
@@ -50,7 +50,7 @@ beforeEach(() => {
 
 describe("Secure Storage - Encryption Tests", () => {
   it("should always produce encrypted payloads with version prefix", async () => {
-    const { saveSecureItem } = await import("../secure-storage")
+    const { saveSecureItem } = await import("../secure-storage.js")
     
     const testData = { patient_name: "John Doe", visit_reason: "Annual checkup" }
     await saveSecureItem("test-encounter", testData)
@@ -72,7 +72,7 @@ describe("Secure Storage - Encryption Tests", () => {
     // Clear cached key
     vi.resetModules()
     
-    const { saveSecureItem } = await import("../secure-storage")
+    const { saveSecureItem } = await import("../secure-storage.js")
     
     const testData = { test: "data" }
     
@@ -86,7 +86,7 @@ describe("Secure Storage - Encryption Tests", () => {
     
     vi.resetModules()
     
-    const { saveSecureItem } = await import("../secure-storage")
+    const { saveSecureItem } = await import("../secure-storage.js")
     
     const testData = { test: "data" }
     
@@ -95,7 +95,7 @@ describe("Secure Storage - Encryption Tests", () => {
   })
   
   it("should auto-migrate unencrypted legacy data to v2 format", async () => {
-    const { loadSecureItem } = await import("../secure-storage")
+    const { loadSecureItem } = await import("../secure-storage.js")
     
     // Store unencrypted JSON (legacy format)
     const legacyData = { patient_name: "Jane Doe" }
@@ -112,7 +112,7 @@ describe("Secure Storage - Encryption Tests", () => {
   })
   
   it("should auto-migrate v1 encrypted data to v2 format", async () => {
-    const { loadSecureItem } = await import("../secure-storage")
+    const { loadSecureItem } = await import("../secure-storage.js")
     
     // Create mock v1 encrypted payload
     const v1Payload = "enc.v1.AQIDBA.BQYHCA" // Mock base64 data
@@ -136,7 +136,7 @@ describe("Secure Storage - Encryption Tests", () => {
 
 describe("Secure Storage - PHI Protection Tests", () => {
   it("should never serialize audio_blob in encounters", async () => {
-    const { saveSecureItem } = await import("../secure-storage")
+    const { saveSecureItem } = await import("../secure-storage.js")
     
     // This test ensures the storage layer would encrypt the data structure
     // The actual audio blob stripping happens in encounters.ts
@@ -155,7 +155,7 @@ describe("Secure Storage - PHI Protection Tests", () => {
   })
   
   it("should handle empty or null values gracefully", async () => {
-    const { saveSecureItem, loadSecureItem } = await import("../secure-storage")
+    const { saveSecureItem, loadSecureItem } = await import("../secure-storage.js")
     
     await saveSecureItem("empty-test", null)
     const loaded = await loadSecureItem("empty-test")
@@ -167,14 +167,14 @@ describe("Secure Storage - PHI Protection Tests", () => {
 
 describe("Secure Storage - Key Rotation", () => {
   it("should provide a key rotation function", async () => {
-    const secureStorage = await import("../secure-storage")
+    const secureStorage = await import("../secure-storage.js")
     
     expect(secureStorage.rotateEncryptionKey).toBeDefined()
     expect(typeof secureStorage.rotateEncryptionKey).toBe("function")
   })
   
   it("should fail key rotation in non-Electron environment", async () => {
-    const { rotateEncryptionKey } = await import("../secure-storage")
+    const { rotateEncryptionKey } = await import("../secure-storage.js")
     
     // No desktop API available
     await expect(rotateEncryptionKey()).rejects.toThrow("requires Electron environment")

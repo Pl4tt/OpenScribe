@@ -5,13 +5,7 @@ type DesktopScreenSource = {
   name?: string
 }
 
-declare global {
-  interface Window {
-    desktop?: {
-      getPrimaryScreenSource?: () => Promise<DesktopScreenSource | null>
-    }
-  }
-}
+// Desktop API type is declared globally in @storage/types.ts
 
 type ChromeDesktopCaptureConstraints = MediaTrackConstraints & {
   mandatory?: {
