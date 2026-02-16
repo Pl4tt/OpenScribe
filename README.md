@@ -33,7 +33,7 @@ OpenScribe is a free MIT license open source AI Medical Scribe that helps clinic
 
 
 This software is currently in early development (v0.x) and is NOT suitable for clinical practice yet. It is intended for evaluation, testing, and development purposes only. 
-- HIPAA Compliant version is currently in the works.  Join the Whatsapp for more information when the version is launched.
+- HIPAA Compliant version is currently in the works.  Join the Discord for more information when the version is launched.
 
 ## Demo
 
@@ -149,7 +149,6 @@ does not perform speech-to-text. See
 ## Project Resources
 
 - **GitHub**: [sammargolis/OpenScribe](https://github.com/sammargolis/OpenScribe)
-- **Project Board**: [Trello](https://trello.com/b/9ytGVZU4/openscribe)
 - **Maintainer**: [@sammargolis](https://github.com/sammargolis)
 - **Architecture**: [architecture.md](./architecture.md)
 - **Tests**: [packages/llm](./packages/llm/src/__tests__/), [packages/pipeline](./packages/pipeline/)
@@ -168,8 +167,6 @@ does not perform speech-to-text. See
 
 **Physical Controls**:
 - User responsibility (device security, physical access)
-
-See the [Trello board](https://trello.com/b/9ytGVZU4/openscribe) for detailed progress.
 
 ### Future Goals (v2.0+)
 - Package app to be able to run 100% locally with transciption model and small 7b model for note generation
@@ -286,7 +283,6 @@ Contributions welcome! See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed gui
 3. Make changes with tests
 4. Submit a PR
 
-Check the [Trello board](https://trello.com/b/9ytGVZU4/openscribe) for current priorities.
 
 ## License
 
