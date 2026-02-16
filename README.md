@@ -283,6 +283,16 @@ Contributions welcome! See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed gui
 3. Make changes with tests
 4. Submit a PR
 
+## Notices
+
+Portions of this project include or were derived from code in:
+
+**StenoAI** – https://github.com/ruzin/stenoai  
+Copyright (c) 2025 Skrape Limited  
+Licensed under the MIT License.
+
+All third-party code remains subject to its original license terms.
+
 
 ## License
 
