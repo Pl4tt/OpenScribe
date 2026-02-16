@@ -37,7 +37,7 @@ cd OpenScribe
 pnpm install
 ```
 
-### 3. Choose Runtime Mode (Local-Only Primary, Cloud Backup)
+### 3. Choose Runtime Mode (Local-Only Primary)
 
 #### Primary: Local-Only (recommended)
 
