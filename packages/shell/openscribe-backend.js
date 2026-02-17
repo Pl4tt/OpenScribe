@@ -34,8 +34,15 @@ function resolveBackendCommand(args = []) {
     return { command: backendPath, args, cwd: backendCwd, mode: 'binary' };
   }
 
-  const scriptPath = path.join(process.cwd(), 'local-only', 'openscribe-backend', 'simple_recorder.py');
-  const pythonCommand = process.platform === 'win32' ? 'python' : 'python3';
+  const backendProjectRoot = path.join(process.cwd(), 'local-only', 'openscribe-backend');
+  const scriptPath = path.join(backendProjectRoot, 'simple_recorder.py');
+  const venvPython =
+    process.platform === 'win32'
+      ? path.join(backendProjectRoot, '.venv-backend', 'Scripts', 'python.exe')
+      : path.join(backendProjectRoot, '.venv-backend', 'bin', 'python3');
+  const pythonCommand = fs.existsSync(venvPython)
+    ? venvPython
+    : (process.platform === 'win32' ? 'python' : 'python3');
 
   if (fs.existsSync(scriptPath)) {
     return {
